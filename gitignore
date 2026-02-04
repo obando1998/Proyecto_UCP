@@ -1,0 +1,7 @@
+# Ignorar node_modules completamente
+node_modules/
+
+# Si también tienes estas carpetas (opcional)
+.DS_Store
+.vscode/
+.idea/

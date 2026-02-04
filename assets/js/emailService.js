@@ -1,0 +1,83 @@
+const express = require('express');
+const nodemailer = require('nodemailer');
+const cors = require('cors');
+const app = express();
+
+// Permitir la comunicación desde tu servidor PHP (WAMP)
+app.use(cors());
+app.use(express.json());
+
+// Configuración SMTP para Sanmarino
+const transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true,
+    auth: {
+        user: 'dotacionsa@gmail.com',
+        pass: 'rsrbseqfdtujmuxl' // Tu contraseña de aplicación generada en Google
+    }
+});
+
+const ADMIN_EMAIL = 'sebastianobando@sanmarino.com.co';
+
+// --- Ruta para Nueva Requisición ---
+app.post('/api/notify-new', async (req, res) => {
+    const data = req.body;
+    try {
+        await transporter.sendMail({
+            from: '"Sistema Requisiciones Sanmarino" <dotacionsa@gmail.com>',
+            to: ADMIN_EMAIL,
+            subject: `🆕 Nueva Requisición: ${data.codigo} - ${data.nombre_cargo}`,
+            html: `
+                <div style="font-family: Arial; border: 1px solid #eee; padding: 20px; border-radius: 8px;">
+                    <h2 style="color: #F2620F;">Nueva Solicitud Recibida</h2>
+                    <p><strong>Código:</strong> ${data.codigo}</p>
+                    <p><strong>Cargo:</strong> ${data.nombre_cargo}</p>
+                    <p><strong>Área:</strong> ${data.area}</p>
+                    <p><strong>Solicitante:</strong> ${data.email_solicita}</p>
+                    <hr>
+                    <p>Puedes revisar los detalles completos en el panel administrativo.</p>
+                </div>`
+        });
+        console.log(`✅ Notificación enviada al Administrador por la req: ${data.codigo}`);
+        res.json({ success: true });
+    } catch (e) {
+        console.error("❌ Error enviando correo admin:", e.message);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// --- Ruta para Cambio de Estado ---
+app.post('/api/notify-status', async (req, res) => {
+    const { requisicion, nuevoEstado } = req.body;
+    try {
+        await transporter.sendMail({
+            from: '"Gestión Humana Sanmarino" <dotacionsa@gmail.com>',
+            to: requisicion.email_solicita,
+            subject: `🔔 Actualización de Estado: ${requisicion.codigo}`,
+            html: `
+                <div style="font-family: Arial; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+                    <h2 style="color: #2c3e50;">Actualización de Solicitud</h2>
+                    <p>Hola, el estado de tu requisición para el cargo <b>${requisicion.nombre_cargo}</b> ha sido actualizado:</p>
+                    <div style="background: #f8f9fa; padding: 15px; border-left: 5px solid #F2620F; font-size: 18px; margin: 15px 0;">
+                        Nuevo Estado: <strong>${nuevoEstado}</strong>
+                    </div>
+                    <p>Atentamente,<br>Equipo de Selección Sanmarino</p>
+                </div>`
+        });
+        console.log(`✅ Notificación de estado enviada a: ${requisicion.email_solicita}`);
+        res.json({ success: true });
+    } catch (e) {
+        console.error("❌ Error enviando correo de estado:", e.message);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Arrancar el microservicio
+const PORT = 5500;
+app.listen(PORT, () => {
+    console.log("==========================================");
+    console.log(`📧 Servidor de Correos Sanmarino Activo`);
+    console.log(`🚀 Escuchando en: http://localhost:${PORT}`);
+    console.log("==========================================");
+});

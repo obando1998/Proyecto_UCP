@@ -1,0 +1,165 @@
+<?php
+session_start();
+
+// Verificar si el usuario es administrador
+if (!isset($_SESSION['rol']) || $_SESSION['rol'] != 'admin') {
+    header("Location: login.php");
+    exit();
+}
+
+include 'connection.php';
+$conn = connection();
+
+// Obtener todas las solicitudes
+$sql_solicitudes = "SELECT * FROM solicitudes";
+$result_solicitudes = $conn->query($sql_solicitudes);
+
+// Obtener todos los técnicos
+$sql_tecnicos = "SELECT * FROM usuarios WHERE rol = 'tecnico'";
+$result_tecnicos = $conn->query($sql_tecnicos);
+
+// Procesar la asignación de solicitudes
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $solicitud_id = $_POST['solicitud_id'];
+    $tecnico_id = $_POST['tecnico_id'];
+
+    // Actualizar la solicitud con el técnico asignado
+    $sql = "UPDATE solicitudes SET estado = 'asignada', asignado_a = '$tecnico_id' WHERE id = '$solicitud_id'";
+    if ($conn->query($sql) === TRUE) {
+        echo "Solicitud asignada con éxito.";
+    } else {
+        echo "Error: " . $sql . "<br>" . $conn->error;
+    }
+}
+
+$conn->close();
+?>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Panel de Administrador</title>
+    <style>
+        .asignar-form {
+            display: none;
+            margin-top: 10px;
+        }
+
+        /* Estilos para los botones */
+        .btn-usuarios {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin: 10px 0;
+        }
+
+        .btn-usuarios:hover {
+            background-color: #0056b3;
+        }
+		.btn-registros {
+            background-color: #909390;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin: 10px 0;
+        }
+
+        .btn-registros:hover {
+            background-color: #8b8b8b;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+    <script>
+        function mostrarFormularioAsignar(solicitudId) {
+            var form = document.getElementById('form-asignar-' + solicitudId);
+            if (form.style.display === 'none') {
+                form.style.display = 'block';
+            } else {
+                form.style.display = 'none';
+            }
+        }
+    </script>
+</head>
+<body>
+    <h2>Panel de Administrador</h2>
+    <a href="creacionUsuario.php" class="btn-usuarios">Creación de Usuario</a>
+	<a href="registros.php" class="btn-registros">Registros de Solicitudes</a>
+
+    <h3>Solicitudes</h3>
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>No. Orden de Trabajo</th>
+            <th>Fecha de Solicitud</th>
+            <th>Proceso</th>
+            <th>Área</th>
+            <th>Cargo</th>
+            <th>Nombre del Solicitante</th>
+            <th>Hallazgo</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+        </tr>
+        <?php while($row = $result_solicitudes->fetch_assoc()): ?>
+        <tr>
+            <td><?php echo $row['id']; ?></td>
+            <td><?php echo $row['no_orden_trabajo']; ?></td>
+            <td><?php echo $row['fecha_solicitud']; ?></td>
+            <td><?php echo $row['proceso']; ?></td>
+            <td><?php echo $row['area']; ?></td>
+            <td><?php echo $row['cargo']; ?></td>
+            <td><?php echo $row['nombre_solicitante']; ?></td>
+            <td><?php echo $row['hallazgo']; ?></td>
+            <td><?php echo $row['estado']; ?></td>
+            <td>
+                <button onclick="mostrarFormularioAsignar(<?php echo $row['id']; ?>)">Asignar</button>
+                <div id="form-asignar-<?php echo $row['id']; ?>" class="asignar-form">
+                    <form method="post" action="">
+                        <input type="hidden" name="solicitud_id" value="<?php echo $row['id']; ?>">
+                        <select name="tecnico_id" required>
+						
+						// Reiniciar el puntero del resultado
+                            mysqli_data_seek($result_tecnicos, 0);
+                            while($tecnico = $result_tecnicos->fetch_assoc()): ?>
+                            <option value="<?php echo $tecnico['id']; ?>"><?php echo $tecnico['nombre']; ?></option>
+						
+						
+                            <?php while($tecnico = $result_tecnicos->fetch_assoc()): ?>
+                            <option value="<?php echo $tecnico['id']; ?>"><?php echo $tecnico['nombre']; ?></option>
+                            <?php endwhile; ?>
+                        </select>
+                        <input type="submit" value="Asignar">
+                    </form>
+                </div>
+            </td>
+        </tr>
+        <?php endwhile; ?>
+    </table>
+</body>
+</html>

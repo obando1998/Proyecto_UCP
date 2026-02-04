@@ -1,0 +1,21 @@
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: Proyecto_UCP
+    ports:
+      - "8097:80"                   
+    volumes:
+      - ./:/var/www/html        # Monta tu código
+   # depends_on:
+   #   - db
+    networks:
+      - red_local
+
+volumes:
+  db_data:
+
+networks:
+  red_local:
