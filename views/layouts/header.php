@@ -13,6 +13,7 @@
     
     <link rel="stylesheet" href="assets/css/dashboard.css">
     <link rel="stylesheet" href="assets/css/panel.css">
+    <link rel="stylesheet" href="assets/css/admin.css">
 </head>
 <body>
 
@@ -23,7 +24,7 @@
     </div>
     
     <div class="sidebar-menu">
-        <!-- Bot車n: Dashboard Principal (solo para Admin - Grado 1) -->
+        <!-- Boton: Dashboard Principal (solo para Admin - Grado 1) -->
         <?php if (isset($_SESSION['grado']) && $_SESSION['grado'] == 1): ?>
         <a href="index.php?url=home/index" class="menu-button">
             <div class="menu-icon">??</div>
@@ -33,17 +34,17 @@
         </a>
         <?php endif; ?>
         
-        <!-- Bot車n: Gesti車n de Devoluciones (Auxiliar - Grado 2, o Admin) -->
+        <!-- Boton: Gestion de Devoluciones (Auxiliar - Grado 2, o Admin) -->
         <?php if (isset($_SESSION['grado']) && ($_SESSION['grado'] == 1 || $_SESSION['grado'] == 2)): ?>
         <a href="index.php?url=panel/auxiliar" class="menu-button">
             <div class="menu-icon">??</div>
             <div class="menu-text">
-                <strong>GESTI車N</strong><br>DEVOLUCIONES
+                <strong>GESTION</strong><br>DEVOLUCIONES
             </div>
         </a>
         <?php endif; ?>
         
-        <!-- Bot車n: Panel Administrador (solo para Admin - Grado 1) -->
+        <!-- Boton: Panel Administrador (solo para Admin - Grado 1) -->
         <?php if (isset($_SESSION['grado']) && $_SESSION['grado'] == 1): ?>
         <a href="index.php?url=admin/index" class="menu-button">
             <div class="menu-icon">??</div>
@@ -53,7 +54,7 @@
         </a>
         <?php endif; ?>
         
-        <!-- Bot車n: Consultar Historial (Todos los usuarios) -->
+        <!-- Boton: Consultar Historial (Todos los usuarios) -->
         <a href="index.php?url=consulta/index" class="menu-button">
             <div class="menu-icon">??</div>
             <div class="menu-text">
@@ -61,7 +62,7 @@
             </div>
         </a>
         
-        <!-- Bot車n: Crear Usuario (solo para Admin - Grado 1) -->
+        <!-- Boton: Crear Usuario (solo para Admin - Grado 1) -->
         <?php if (isset($_SESSION['grado']) && $_SESSION['grado'] == 1): ?>
         <a href="index.php?url=usuario/crear" class="menu-button">
             <div class="menu-icon">?</div>
@@ -87,7 +88,7 @@
             </div>
             <div class="user-name"><?php echo $_SESSION['nombre'] ?? 'Usuario'; ?></div>
         </div>
-        <button class="logout-btn" onclick="logout()">Cerrar Sesi車n</button>
+        <button class="logout-btn" onclick="logout()">Cerrar Sesion</button>
     </div>
 </div>
 

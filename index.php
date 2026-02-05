@@ -10,22 +10,7 @@ $url = isset($_GET['url']) ? $_GET['url'] : '';
 
 if (empty($url)) {
     if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
-        // --- LÓGICA DE REDIRECCIÓN POR GRADO ---
-        switch ($_SESSION['GRADO']) {
-            case 1: 
-                $url = 'home/index';      // Admin va al Dashboard (antiguo menu.php)
-                break;
-            case 2: 
-                $url = 'devolucion/crear'; // Auxiliar va directo a registrar (antiguo panel_auxiliar.php)
-                break;
-            case 3: 
-                $url = 'consulta/index';   // Consulta va directo al historial
-                break;
-            default:
-                $url = 'auth/index';
-        }
-    } else {
-        $url = 'auth/index';
+    
     }
 }
 
