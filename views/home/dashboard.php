@@ -1,91 +1,166 @@
 <?php 
-// Heredamos el t铆tulo del controlador
+$titulo = "Dashboard - DevolutionSync";
 include 'Views/layouts/header.php'; 
 ?>
 
-<style>
-    .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
-    .indicator-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); text-align: center; border-bottom: 4px solid #ff8c00; transition: 0.3s; }
-    .indicator-card:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
-    .indicator-card h3 { font-size: 14px; color: #666; text-transform: uppercase; margin-bottom: 10px; }
-    .indicator-card .value { font-size: 28px; font-weight: bold; color: #333; }
-    .filter-section { background: white; padding: 20px; border-radius: 12px; margin-bottom: 25px; display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
-</style>
-
-<div class="filter-section">
-    <label><strong>馃搮 Filtrar actividad por fecha:</strong></label>
-    <form action="index.php" method="GET" id="fechaForm">
+<div class="dashboard-header">
+    <h1 class="dashboard-title">Dashboard - DevolutionSync</h1>
+    
+    <!-- Selector de fecha -->
+    <form method="GET" action="index.php" class="date-selector">
         <input type="hidden" name="url" value="home/index">
-        <select name="fecha" class="form-control" onchange="this.form.submit()" style="padding: 8px; border-radius: 5px; border: 1px solid #ddd; min-width: 200px;">
-            <?php foreach($fechas as $f): ?>
-                <option value="<?php echo $f; ?>" <?php echo ($f == $fechaFiltro) ? 'selected' : ''; ?>>
+        <label for="fecha">Seleccionar Fecha:</label>
+        <select name="fecha" id="fecha" onchange="this.form.submit()">
+            <?php foreach ($fechas as $f): ?>
+                <option value="<?php echo $f; ?>" <?php echo ($fechaFiltro == $f) ? 'selected' : ''; ?>>
                     <?php echo date('d/m/Y', strtotime($f)); ?>
                 </option>
             <?php endforeach; ?>
         </select>
+        <button type="submit">Actualizar</button>
     </form>
-</div>
-
-<h2 style="margin-bottom: 15px; color: #444; border-left: 5px solid #ff8c00; padding-left: 10px;">
-    Resumen del D铆a (<?php echo date('d/m/Y', strtotime($fechaFiltro)); ?>)
-</h2>
-
-<div class="dashboard-grid">
-    <div class="indicator-card">
-        <h3>Devoluciones</h3>
-        <div class="value"><?php echo $statsHoy['total'] ?? 0; ?></div>
-    </div>
-    <div class="indicator-card" style="border-color: #28a745;">
-        <h3>Total KG</h3>
-        <div class="value"><?php echo number_format($statsHoy['total_kg'] ?? 0, 2); ?></div>
-    </div>
-    <div class="indicator-card" style="border-color: #17a2b8;">
-        <h3>Total Unidades</h3>
-        <div class="value"><?php echo number_format($statsHoy['total_und'] ?? 0, 0); ?></div>
-    </div>
-    <div class="indicator-card" style="border-color: #dc3545;">
-        <h3>Pendientes</h3>
-        <div class="value"><?php echo $statsHoy['pendientes'] ?? 0; ?></div>
+    
+    <div class="current-date">
+        <strong>Mostrando datos para:</strong> 
+        <?php 
+        if ($fechaFiltro == date('Y-m-d')) {
+            echo "<strong>HOY - " . date('d/m/Y') . "</strong>";
+        } else {
+            echo date('d/m/Y', strtotime($fechaFiltro));
+        }
+        ?>
     </div>
 </div>
 
-<div class="dashboard-grid">
-    <div class="indicator-card" style="border-color: #6610f2;">
-        <h3>Motivo: Devoluci贸n</h3>
-        <div class="value"><?php echo $statsHoy['motivo_dev'] ?? 0; ?></div>
+<!-- Grid de indicadores principales -->
+<div class="indicators-grid">
+    <div class="indicator-card border-blue">
+        <div class="date-badge">FECHA SELECCIONADA</div>
+        <div class="indicator-icon">??</div>
+        <div class="indicator-value"><?php echo $statsHoy['total_dev'] ?? 0; ?></div>
+        <div class="indicator-label">Total Devoluciones</div>
+        <?php if ($fechaFiltro == date('Y-m-d')): ?>
+            <div class="indicator-trend trend-positive">En tiempo real</div>
+        <?php else: ?>
+            <div class="indicator-trend trend-neutral">Datos históricos</div>
+        <?php endif; ?>
     </div>
-    <div class="indicator-card" style="border-color: #fd7e14;">
-        <h3>Motivo: Faltante</h3>
-        <div class="value"><?php echo $statsHoy['motivo_fal'] ?? 0; ?></div>
+
+    <div class="indicator-card border-teal">
+        <div class="indicator-icon">??</div>
+        <div class="indicator-value"><?php echo $statsHoy['motivo_dev'] ?? 0; ?></div>
+        <div class="indicator-label">Devoluciones</div>
+        <div class="indicator-trend trend-neutral">Motivo: Devolución</div>
     </div>
-    <div class="indicator-card" style="border-color: #20c997;">
-        <h3>Motivo: Sobrante</h3>
-        <div class="value"><?php echo $statsHoy['motivo_sob'] ?? 0; ?></div>
+
+    <div class="indicator-card border-red">
+        <div class="indicator-icon">?</div>
+        <div class="indicator-value"><?php echo $statsHoy['motivo_fal'] ?? 0; ?></div>
+        <div class="indicator-label">Faltantes</div>
+        <div class="indicator-trend trend-negative">Motivo: Faltante</div>
+    </div>
+
+    <div class="indicator-card border-purple">
+        <div class="indicator-icon">?</div>
+        <div class="indicator-value"><?php echo $statsHoy['motivo_sob'] ?? 0; ?></div>
+        <div class="indicator-label">Sobrantes</div>
+        <div class="indicator-trend trend-positive">Motivo: Sobrante</div>
+    </div>
+
+    <div class="indicator-card border-green">
+        <div class="indicator-icon">??</div>
+        <div class="indicator-value"><?php echo number_format($statsHoy['total_kg'] ?? 0, 2); ?></div>
+        <div class="indicator-label">Total KG</div>
+        <div class="indicator-trend trend-neutral">Peso total</div>
+    </div>
+
+    <div class="indicator-card border-orange">
+        <div class="indicator-icon">??</div>
+        <div class="indicator-value"><?php echo number_format($statsHoy['total_und'] ?? 0, 0); ?></div>
+        <div class="indicator-label">Total UND</div>
+        <div class="indicator-trend trend-neutral">Unidades totales</div>
     </div>
 </div>
 
-<h2 style="margin-bottom: 15px; color: #444; border-left: 5px solid #6c757d; padding-left: 10px; margin-top: 30px;">
-    馃搳 Hist贸rico Acumulado
-</h2>
-
-<div class="dashboard-grid">
-    <div class="indicator-card" style="border-color: #6c757d;">
-        <h3>Total Hist贸rico</h3>
-        <div class="value"><?php echo $statsGeneral['total'] ?? 0; ?></div>
-    </div>
-    <div class="indicator-card" style="border-color: #6c757d;">
-        <h3>KG Hist贸rico</h3>
-        <div class="value"><?php echo number_format($statsGeneral['total_kg'] ?? 0, 2); ?></div>
-    </div>
-    <div class="indicator-card" style="border-color: #6c757d;">
-        <h3>Unidades Hist贸rico</h3>
-        <div class="value"><?php echo number_format($statsGeneral['total_und'] ?? 0, 0); ?></div>
+<!-- Estado de las devoluciones -->
+<div class="general-stats">
+    <h3>?? Estado de Devoluciones - <?php echo date('d/m/Y', strtotime($fechaFiltro)); ?></h3>
+    <div class="stats-grid">
+        <div class="stat-item">
+            <div class="stat-value"><?php echo $statsHoy['pendientes'] ?? 0; ?></div>
+            <div class="stat-label">Pendientes</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value"><?php echo $statsHoy['aprobadas'] ?? 0; ?></div>
+            <div class="stat-label">Aprobadas</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value"><?php echo $statsHoy['rechazadas'] ?? 0; ?></div>
+            <div class="stat-label">Rechazadas</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">
+                <?php 
+                $totalRevisadas = ($statsHoy['aprobadas'] ?? 0) + ($statsHoy['rechazadas'] ?? 0);
+                $totalDev = $statsHoy['total_dev'] ?? 0;
+                $porcentaje = $totalDev > 0 ? round(($totalRevisadas / $totalDev) * 100, 1) : 0;
+                echo $porcentaje . '%';
+                ?>
+            </div>
+            <div class="stat-label">Revisadas</div>
+        </div>
     </div>
 </div>
 
-<div class="card" style="text-align: center; padding: 40px; margin-top: 20px;">
-    <h3>馃憢 Bienvenido al Sistema DevolutionSync</h3>
-    <p style="color: #777; margin-top: 10px;">Utilice el men煤 superior para navegar entre las opciones de registro y consulta.</p>
+<!-- Resumen General (todas las fechas) -->
+<div class="general-stats">
+    <h3>?? Resumen General (Todas las Fechas)</h3>
+    <div class="stats-grid">
+        <div class="stat-item">
+            <div class="stat-value"><?php echo $statsGeneral['total_dev'] ?? 0; ?></div>
+            <div class="stat-label">Total Devoluciones</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value"><?php echo $statsGeneral['aprobadas'] ?? 0; ?></div>
+            <div class="stat-label">Total Aprobadas</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value"><?php echo $statsGeneral['rechazadas'] ?? 0; ?></div>
+            <div class="stat-label">Total Rechazadas</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value"><?php echo number_format($statsGeneral['total_kg'] ?? 0, 2); ?></div>
+            <div class="stat-label">Total KG General</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value"><?php echo number_format($statsGeneral['total_und'] ?? 0, 0); ?></div>
+            <div class="stat-label">Total UND General</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value"><?php echo count($fechas); ?></div>
+            <div class="stat-label">Días con Actividad</div>
+        </div>
+    </div>
 </div>
+
+<script>
+    // Función para cerrar sesión
+    function logout() {
+        if (confirm('?Estás seguro de que deseas cerrar sesión?')) {
+            window.location.href = 'index.php?url=auth/logout';
+        }
+    }
+
+    // Efectos de animación al cargar
+    document.addEventListener('DOMContentLoaded', function() {
+        const cards = document.querySelectorAll('.indicator-card');
+        cards.forEach((card, index) => {
+            setTimeout(() => {
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, index * 100);
+        });
+    });
+</script>
 
 <?php include 'Views/layouts/footer.php'; ?>
