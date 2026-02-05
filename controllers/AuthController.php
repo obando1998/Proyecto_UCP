@@ -10,15 +10,14 @@ class AuthController {
         $this->model = new AuthModel();
     }
 
-    // Muestra la página de login
     public function index() {
         if (isset($_SESSION['logged_in'])) {
             $this->redirigirSegunGrado($_SESSION['grado']);
+            return;
         }
         require_once 'Views/auth/login.php';
     }
 
-    // Procesa el formulario (AJAX)
     public function login() {
         header('Content-Type: application/json');
         
@@ -54,15 +53,22 @@ class AuthController {
         exit;
     }
 
+    // ESTE ES EL MÉTODO QUE CORREGIMOS
     private function getRedirectUrl($grado) {
         switch ($grado) {
-            case 1: return 'index.php?url=usuario/crear'; // O tu menú principal
-            case 2: return 'index.php?url=panel/auxiliar';
-            case 3: return 'index.php?url=panel/consulta';
-            default: return 'index.php?url=auth/index';
+            case 1: 
+                // Antes decía 'usuario/crear', ahora lo enviamos al Dashboard
+                return 'index.php?url=home/index'; 
+            case 2: 
+                // Ajusta esto según el nombre de tu controlador de devoluciones
+                return 'index.php?url=devolucion/crear'; 
+            case 3: 
+                return 'index.php?url=consulta/index';
+            default: 
+                return 'index.php?url=auth/index';
         }
     }
-    
+
     private function redirigirSegunGrado($grado) {
         header('Location: ' . $this->getRedirectUrl($grado));
         exit;
