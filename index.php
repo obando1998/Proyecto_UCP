@@ -14,7 +14,7 @@ if (empty($url)) {
     }
 }
 
-// 4. Enrutamiento estándar (Descomponer URL)
+// 4. Enrutamiento estándar (Descomponer URL.)
 $urlParts = explode('/', rtrim($url, '/'));
 $controllerName = ucfirst($urlParts[0]) . 'Controller';
 $method = isset($urlParts[1]) ? $urlParts[1] : 'index';
