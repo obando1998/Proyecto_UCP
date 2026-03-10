@@ -1,6 +1,6 @@
 <?php
 // 1. Cargar configuración
-require_once 'Config/Conexion.php';
+require_once 'config/Conexion.php';
 
 // 2. Iniciar sesión
 if (session_status() === PHP_SESSION_NONE) session_start();
