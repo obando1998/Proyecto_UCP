@@ -1,0 +1,331 @@
+<?php
+// config/EmailHelper.php
+
+require_once __DIR__ . '/class.phpmailer.php';
+require_once __DIR__ . '/class.smtp.php';
+
+class EmailHelper {
+    
+    private $mail;
+    private $emailAdmin = 'sebastianobando@sanmarino.com.co'; // Email fijo para notificaciones
+    
+    public function __construct() {
+        $this->mail = new PHPMailer();
+        $this->configurarSMTP();
+    }
+    
+    private function configurarSMTP() {
+        $this->mail->IsSMTP();
+        $this->mail->SMTPAuth = true;
+        $this->mail->SMTPSecure = "ssl";
+        $this->mail->Host = "smtp.gmail.com";
+        $this->mail->Port = 465;
+        $this->mail->Username = 'dotacionsa@gmail.com';
+        $this->mail->Password = 'rsrbseqfdtujmuxl';
+        $this->mail->SetFrom('dotacionsa@gmail.com', 'Sistema de Requisiciones Sanmarino');
+        $this->mail->CharSet = 'UTF-8';
+    }
+    
+    /**
+     * Enviar notificación de nueva requisición al administrador
+     */
+    public function notificarNuevaRequisicion($requisicion) {
+        $this->mail->ClearAddresses();
+        $this->mail->AddAddress($this->emailAdmin);
+        
+        $this->mail->isHTML(true);
+        $this->mail->Subject = "Nueva Requisición de Personal - " . $requisicion['codigo'];
+        
+        $mensaje = $this->plantillaNuevaRequisicion($requisicion);
+        $this->mail->Body = $mensaje;
+        
+        if (!$this->mail->Send()) {
+            error_log("Error al enviar correo de nueva requisición: " . $this->mail->ErrorInfo);
+            return false;
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Enviar notificación de cambio de estado al solicitante
+     */
+    public function notificarCambioEstado($requisicion, $nuevoEstado) {
+        $this->mail->ClearAddresses();
+        
+        // Enviar al email del solicitante
+        if (!empty($requisicion['email_solicita'])) {
+            $this->mail->AddAddress($requisicion['email_solicita']);
+        } else {
+            error_log("No hay email de solicitante para la requisición: " . $requisicion['codigo']);
+            return false;
+        }
+        
+        $this->mail->isHTML(true);
+        
+        // Asunto según el estado
+        $asuntos = [
+            'Pendiente' => 'Requisición Registrada',
+            'Aprobada' => 'Requisición APROBADA',
+            'En Proceso' => 'Candidato(s) ENCONTRADO(S) para su vacante',
+            'Cerrada' => 'Requisición CERRADA'
+        ];
+        
+        $this->mail->Subject = ($asuntos[$nuevoEstado] ?? 'Actualización de Requisición') . " - " . $requisicion['codigo'];
+        
+        $mensaje = $this->plantillaCambioEstado($requisicion, $nuevoEstado);
+        $this->mail->Body = $mensaje;
+        
+        if (!$this->mail->Send()) {
+            error_log("Error al enviar correo de cambio de estado: " . $this->mail->ErrorInfo);
+            return false;
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Plantilla HTML para nueva requisición
+     */
+    private function plantillaNuevaRequisicion($req) {
+        return '
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+        </head>
+        <body style="margin:0; padding:0; background-color:#f4f6f8; font-family: Arial, sans-serif;">
+            <div style="max-width:600px; margin:30px auto; background:#ffffff; border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,0.15);">
+                
+                <!-- Encabezado -->
+                <div style="background: linear-gradient(135deg, #F2B749, #F2620F); color:#ffffff; padding:20px; text-align:center;">
+                    <h2 style="margin:0; font-size:24px;">🆕 Nueva Requisición de Personal</h2>
+                </div>
+                
+                <!-- Cuerpo -->
+                <div style="padding:25px; color:#333333;">
+                    <p style="font-size:15px; margin-bottom:20px;">
+                        Se ha registrado una nueva solicitud de requisición de personal con los siguientes detalles:
+                    </p>
+                    
+                    <div style="background:#FFF3E0; padding:15px; border-radius:8px; border-left:4px solid #F2620F; margin-bottom:20px;">
+                        <table style="width:100%; border-collapse:collapse; font-size:14px;">
+                            <tr>
+                                <td style="padding:8px 4px; width:40%;"><strong>📋 Código:</strong></td>
+                                <td style="padding:8px 4px; color:#F2620F; font-weight:bold;">' . htmlspecialchars($req['codigo']) . '</td>
+                            </tr>
+                            <tr>
+                                <td style="padding:8px 4px;"><strong>📅 Fecha Solicitud:</strong></td>
+                                <td style="padding:8px 4px;">' . htmlspecialchars($req['fecha_solicitud']) . '</td>
+                            </tr>
+                            <tr>
+                                <td style="padding:8px 4px;"><strong>💼 Cargo:</strong></td>
+                                <td style="padding:8px 4px; font-weight:600;">' . htmlspecialchars($req['nombre_cargo']) . '</td>
+                            </tr>
+                            <tr>
+                                <td style="padding:8px 4px;"><strong>🏢 Área:</strong></td>
+                                <td style="padding:8px 4px;">' . htmlspecialchars($req['area']) . '</td>
+                            </tr>
+                            <tr>
+                                <td style="padding:8px 4px;"><strong>📍 Ciudad:</strong></td>
+                                <td style="padding:8px 4px;">' . htmlspecialchars($req['ciudad_ubicacion']) . '</td>
+                            </tr>
+                            <tr>
+                                <td style="padding:8px 4px;"><strong>👥 N° Vacantes:</strong></td>
+                                <td style="padding:8px 4px;"><strong style="color:#F2620F;">' . htmlspecialchars($req['numero_vacantes']) . '</strong></td>
+                            </tr>
+                            <tr>
+                                <td style="padding:8px 4px;"><strong>📝 Tipo Contrato:</strong></td>
+                                <td style="padding:8px 4px;">' . htmlspecialchars($req['tipo_contrato']) . '</td>
+                            </tr>
+                            <tr>
+                                <td style="padding:8px 4px;"><strong>✉️ Email Solicitante:</strong></td>
+                                <td style="padding:8px 4px;">' . htmlspecialchars($req['email_solicita']) . '</td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    ' . (!empty($req['observaciones_perfil']) ? '
+                    <div style="margin-top:15px; padding:12px; background:#E3F2FD; border-left:4px solid #2196F3; border-radius:4px;">
+                        <strong>📌 Observaciones del Perfil:</strong><br>
+                        <span style="font-size:13px;">' . nl2br(htmlspecialchars($req['observaciones_perfil'])) . '</span>
+                    </div>
+                    ' : '') . '
+                    
+                    <p style="margin-top:25px; font-size:14px; text-align:center;">
+                        Para gestionar esta requisición, acceda al sistema:
+                    </p>
+                    
+                    <p style="text-align:center; margin:25px 0;">
+                        <a href="http://192.200.100.40/index.php?controller=requisicion&action=panel"
+                           style="background: linear-gradient(135deg, #F2B749, #F2620F); 
+                                  color: white; 
+                                  padding:12px 30px; 
+                                  text-decoration:none; 
+                                  border-radius:8px; 
+                                  font-weight:bold;
+                                  display:inline-block;">
+                            🔗 Ir al Panel de Requisiciones
+                        </a>
+                    </p>
+                </div>
+                
+                <!-- Pie -->
+                <div style="background:#f0f0f0; color:#777; text-align:center; padding:15px; font-size:12px;">
+                    <p style="margin:0;">Este mensaje fue generado automáticamente por el Sistema de Requisiciones</p>
+                    <p style="margin:5px 0 0 0;"><strong>SANMARINO - Genética Avícola</strong></p>
+                </div>
+                
+            </div>
+        </body>
+        </html>';
+    }
+    
+    /**
+     * Plantilla HTML para cambio de estado
+     */
+    private function plantillaCambioEstado($req, $nuevoEstado) {
+        // Colores según estado
+        $colores = [
+            'Pendiente' => ['bg' => '#FFF3CD', 'border' => '#FFC107', 'text' => '#856404'],
+            'Aprobada' => ['bg' => '#D1E7DD', 'border' => '#198754', 'text' => '#0A3622'],
+            'En Proceso' => ['bg' => '#CFE2FF', 'border' => '#0D6EFD', 'text' => '#084298'],
+            'Cerrada' => ['bg' => '#E2E3E5', 'border' => '#6C757D', 'text' => '#41464B']
+        ];
+        
+        $color = $colores[$nuevoEstado] ?? $colores['Pendiente'];
+        
+        // Emojis según estado
+        $emojis = [
+            'Pendiente' => '⏳',
+            'Aprobada' => '✅',
+            'En Proceso' => '🔄',
+            'Cerrada' => '🔒'
+        ];
+        
+        $emoji = $emojis[$nuevoEstado] ?? '📋';
+        
+        // Mensajes personalizados
+        $mensajes = [
+            'Pendiente' => 'Su requisición ha sido registrada y está pendiente de revisión.',
+            'Aprobada' => '¡Excelente noticia! Su requisición ha sido aprobada y está lista para el proceso de selección.',
+            'En Proceso' => '¡Tenemos buenas noticias! Se han encontrado candidato(s) para su vacante y están en proceso de selección.',
+            'Cerrada' => 'Su requisición ha sido cerrada. El proceso de selección ha finalizado.'
+        ];
+        
+        $mensaje = $mensajes[$nuevoEstado] ?? 'El estado de su requisición ha sido actualizado.';
+        
+        return '
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+        </head>
+        <body style="margin:0; padding:0; background-color:#f4f6f8; font-family: Arial, sans-serif;">
+            <div style="max-width:600px; margin:30px auto; background:#ffffff; border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,0.15);">
+                
+                <!-- Encabezado -->
+                <div style="background: linear-gradient(135deg, #F2B749, #F2620F); color:#ffffff; padding:20px; text-align:center;">
+                    <h2 style="margin:0; font-size:24px;">' . $emoji . ' Actualización de Requisición</h2>
+                </div>
+                
+                <!-- Cuerpo -->
+                <div style="padding:25px; color:#333333;">
+                    <p style="font-size:15px; margin-bottom:20px;">
+                        Estimado(a) colaborador(a),
+                    </p>
+                    
+                    <p style="font-size:15px; margin-bottom:20px;">
+                        ' . $mensaje . '
+                    </p>
+                    
+                    <!-- Estado Actual -->
+                    <div style="background:' . $color['bg'] . '; 
+                                padding:15px; 
+                                border-radius:8px; 
+                                border-left:4px solid ' . $color['border'] . '; 
+                                margin:20px 0;
+                                text-align:center;">
+                        <p style="margin:0; font-size:14px; color:' . $color['text'] . ';">
+                            <strong>ESTADO ACTUAL</strong>
+                        </p>
+                        <p style="margin:10px 0 0 0; font-size:24px; font-weight:bold; color:' . $color['text'] . ';">
+                            ' . strtoupper($nuevoEstado) . '
+                        </p>
+                    </div>
+                    
+                    <!-- Detalles de la Requisición -->
+                    <div style="background:#FFF3E0; padding:15px; border-radius:8px; border-left:4px solid #F2620F; margin-top:20px;">
+                        <p style="margin:0 0 10px 0; font-size:14px; font-weight:bold; color:#F2620F;">
+                            📋 DETALLES DE LA REQUISICIÓN
+                        </p>
+                        <table style="width:100%; border-collapse:collapse; font-size:14px;">
+                            <tr>
+                                <td style="padding:6px 4px; width:35%;"><strong>Código:</strong></td>
+                                <td style="padding:6px 4px; font-weight:600; color:#F2620F;">' . htmlspecialchars($req['codigo']) . '</td>
+                            </tr>
+                            <tr>
+                                <td style="padding:6px 4px;"><strong>Cargo:</strong></td>
+                                <td style="padding:6px 4px;">' . htmlspecialchars($req['nombre_cargo']) . '</td>
+                            </tr>
+                            <tr>
+                                <td style="padding:6px 4px;"><strong>Área:</strong></td>
+                                <td style="padding:6px 4px;">' . htmlspecialchars($req['area']) . '</td>
+                            </tr>
+                            <tr>
+                                <td style="padding:6px 4px;"><strong>N° Vacantes:</strong></td>
+                                <td style="padding:6px 4px;"><strong>' . htmlspecialchars($req['numero_vacantes']) . '</strong></td>
+                            </tr>
+                            <tr>
+                                <td style="padding:6px 4px;"><strong>Fecha Solicitud:</strong></td>
+                                <td style="padding:6px 4px;">' . htmlspecialchars($req['fecha_solicitud']) . '</td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    ' . ($nuevoEstado == 'En Proceso' ? '
+                    <div style="margin-top:20px; padding:15px; background:#E8F5E9; border-left:4px solid #4CAF50; border-radius:4px;">
+                        <p style="margin:0; font-size:14px;">
+                            <strong>✨ Próximos Pasos:</strong><br>
+                            <span style="font-size:13px;">
+                                El equipo de Recursos Humanos está gestionando los candidatos seleccionados. 
+                                Le mantendremos informado sobre el avance del proceso.
+                            </span>
+                        </p>
+                    </div>
+                    ' : '') . '
+                    
+                    <p style="margin-top:30px; font-size:14px; text-align:center; color:#666;">
+                        Para más detalles, puede consultar el sistema en cualquier momento:
+                    </p>
+                    
+                    <p style="text-align:center; margin:20px 0;">
+                        <a href="http://192.200.100.40/index.php?controller=requisicion&action=panel"
+                           style="background: linear-gradient(135deg, #F2B749, #F2620F); 
+                                  color: white; 
+                                  padding:12px 30px; 
+                                  text-decoration:none; 
+                                  border-radius:8px; 
+                                  font-weight:bold;
+                                  display:inline-block;">
+                            🔗 Ver Estado de mi Requisición
+                        </a>
+                    </p>
+                    
+                    <p style="margin-top:25px; font-size:13px; color:#666; text-align:center;">
+                        Si tiene alguna pregunta, por favor contacte al área de Recursos Humanos.
+                    </p>
+                </div>
+                
+                <!-- Pie -->
+                <div style="background:#f0f0f0; color:#777; text-align:center; padding:15px; font-size:12px;">
+                    <p style="margin:0;">Este mensaje fue generado automáticamente. Por favor no responda a este correo.</p>
+                    <p style="margin:5px 0 0 0;"><strong>Sistema de Requisiciones - SANMARINO</strong></p>
+                </div>
+                
+            </div>
+        </body>
+        </html>';
+    }
+}
+?>
