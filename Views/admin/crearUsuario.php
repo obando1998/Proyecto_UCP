@@ -32,7 +32,7 @@ include 'Views/layouts/header.php';
 
         <!-- ── Formulario Crear Usuario ── -->
         <div class="admin-card" style="overflow:hidden;">
-            <div class="card-header pending-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <div class="card-header pending-card" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);">
                 <div class="card-title">
                     <i class="fas fa-user-plus"></i>
                     <h2>Nuevo Usuario</h2>

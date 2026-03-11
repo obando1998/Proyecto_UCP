@@ -10,7 +10,7 @@
 }
 
 .panel-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	background: linear-gradient(135deg, #ff8c00, #ff6b00);
     color: white;
     padding: 30px;
     border-radius: 15px;
@@ -79,7 +79,7 @@
 }
 
 .form-card-header {
-    background: linear-gradient(135deg, #ff8c00, #ff6b00);
+    background: linear-gradient(#9F9DAB 100%);
     color: white;
     padding: 20px 30px;
 }
