@@ -6,7 +6,7 @@ class UsuarioController {
     private $model;
 
     public function __construct() {
-        // Aquí podrías incluir la lógica de session_timeout.php
+        // Aquí  podrías incluir la lógica de session_timeout.php
         if (session_status() === PHP_SESSION_NONE) session_start();
         
         if (!isset($_SESSION['logged_in']) || $_SESSION['grado'] != 1) {
