@@ -7,6 +7,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="author" content="Sebastian Obando">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <!-- reCAPTCHA -->
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap'); 
 
@@ -45,9 +47,7 @@
             margin: 20px 0;
         }
 
-        .contenedor span {
-            font-size: 12px;
-        }
+        .contenedor span { font-size: 12px; }
 
         .contenedor a {
             color: #333;
@@ -68,17 +68,21 @@
             text-transform: uppercase;
             margin-top: 10px;
             cursor: pointer;
+            transition: all 0.3s ease;
         }
 
-        .contenedor button.hidden {
-            background-color: transparent;
-            border-color: #fff;
-        }
-
+        /* Deshabilitado hasta completar reCAPTCHA */
         .contenedor button:disabled {
             background-color: #cccccc;
+            color: #888;
             cursor: not-allowed;
             opacity: 0.7;
+        }
+
+        .contenedor button:not(:disabled):hover {
+            background-color: #e66a00;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 123, 0, 0.3);
         }
 
         .contenedor form {
@@ -102,7 +106,6 @@
             outline: none;
         }
 
-        /* ── Alerta ── */
         .alert {
             width: 100%;
             padding: 10px 14px;
@@ -118,6 +121,14 @@
         .alert-success { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
         .alert-warning { background-color: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
 
+        /* reCAPTCHA centrado */
+        .recaptcha-wrapper {
+            display: flex;
+            justify-content: center;
+            margin: 14px 0 4px 0;
+            width: 100%;
+        }
+
         .form-container {
             position: absolute;
             top: 0;
@@ -131,9 +142,7 @@
             z-index: 2;
         }
 
-        .contenedor.active .sign-in {
-            transform: translateX(100%);
-        }
+        .contenedor.active .sign-in { transform: translateX(100%); }
 
         .sign-up {
             left: 0;
@@ -182,9 +191,7 @@
             transition: all 0.6s ease-in-out;
         }
 
-        .contenedor.active .toggle {
-            transform: translateX(50%);
-        }
+        .contenedor.active .toggle { transform: translateX(50%); }
 
         .toggle-panel {
             position: absolute;
@@ -201,28 +208,10 @@
             transition: all 0.6s ease-in-out;
         }
 
-        .toggle-left {
-            transform: translateX(-200%);
-        }
-
-        .contenedor.active .toggle-left {
-            transform: translateX(0);
-        }
-
-        .toggle-right {
-            right: 0;
-            transform: translateX(0);
-        }
-
-        .contenedor.active .toggle-right {
-            transform: translateX(200%);
-        }
-
-        .footer {
-            text-align: center;
-            padding: 20px;
-            margin-top: auto;
-        }
+        .toggle-left { transform: translateX(-200%); }
+        .contenedor.active .toggle-left { transform: translateX(0); }
+        .toggle-right { right: 0; transform: translateX(0); }
+        .contenedor.active .toggle-right { transform: translateX(200%); }
 
         .copyright {
             display: inline-block;
@@ -232,6 +221,7 @@
             border-radius: 4px;
             font-size: 16px;
             font-weight: bold;
+            margin-top: 20px;
         }
     </style>
 </head>
@@ -241,14 +231,28 @@
         <div class="form-container sign-in">
             <form id="loginForm">
                 <h1>Iniciar Sesion</h1>
+				<br>
                 <span>Ingresa tu usuario y contraseña para iniciar sesión</span>
 
-                <!-- ✅ Este div faltaba — causaba el error en consola -->
                 <div id="alertMessage" class="alert"></div>
 
-                <input type="text" id="username" name="username" placeholder="Ingresa tu usuario" required autocomplete="username">
-                <input type="password" id="password" name="password" placeholder="Ingresa tu contraseña" required autocomplete="current-password">
-                <button type="submit" id="loginButton">Iniciar Sesión</button>
+                <input type="text" id="username" name="username"
+                       placeholder="Ingresa tu usuario" required autocomplete="username">
+
+                <input type="password" id="password" name="password"
+                       placeholder="Ingresa tu contraseña" required autocomplete="current-password">
+
+                <!-- reCAPTCHA v2 — botón se habilita en el callback onCaptchaSuccess -->
+                <div class="recaptcha-wrapper">
+                    <div class="g-recaptcha"
+                         data-sitekey="6LcUafsrAAAAAIpMZzqTmXPQmM6WDRb7UQGd_6t-"
+                         data-callback="onCaptchaSuccess"
+                         data-expired-callback="onCaptchaExpired">
+                    </div>
+                </div>
+
+                <!-- disabled por defecto — se activa solo cuando reCAPTCHA es resuelto -->
+                <button type="submit" id="loginButton" disabled>Iniciar Sesión</button>
             </form>
         </div>
         
@@ -262,58 +266,76 @@
         </div>
     </div>
 
-    <br>
     <div>
-        <div class="copyright">
-            &#169; Avicampo <?php echo date('Y'); ?>
-        </div>
+        <div class="copyright">&#169; Avicampo <?php echo date('Y'); ?></div>
     </div>
 
     <script>
+        // ── Callbacks del reCAPTCHA ──────────────────────
+        function onCaptchaSuccess(token) {
+            document.getElementById('loginButton').disabled = false;
+        }
+
+        function onCaptchaExpired() {
+            document.getElementById('loginButton').disabled = true;
+            showAlert('El reCAPTCHA ha expirado. Por favor vuelve a verificar.', 'warning');
+        }
+
+        // ── Submit ───────────────────────────────────────
         document.getElementById('loginForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            
-            const loginButton  = document.getElementById('loginButton');
-            const formData     = new FormData(this);
-            
+
+            const loginButton     = document.getElementById('loginButton');
+            const captchaResponse = grecaptcha.getResponse();
+
+            // Doble verificación por si acaso
+            if (!captchaResponse) {
+                showAlert('Por favor completa el reCAPTCHA antes de continuar.', 'warning');
+                return;
+            }
+
+            const formData = new FormData(this);
+            formData.append('recaptcha_token', captchaResponse);
+
             loginButton.disabled    = true;
             loginButton.textContent = 'Verificando...';
-            
+
             fetch('index.php?url=auth/login', {
                 method: 'POST',
                 body: formData
             })
-            .then(response => response.json())
+            .then(r => r.json())
             .then(data => {
                 if (data.success) {
                     showAlert('Acceso concedido. Redirigiendo...', 'success');
-                    setTimeout(() => {
-                        window.location.href = data.redirect;
-                    }, 1000);
+                    setTimeout(() => { window.location.href = data.redirect; }, 1000);
                 } else {
                     showAlert(data.message || 'Credenciales incorrectas', 'error');
-                    loginButton.disabled    = false;
+                    // Resetear reCAPTCHA y volver a bloquear el botón
+                    grecaptcha.reset();
+                    loginButton.disabled    = true;
                     loginButton.textContent = 'Iniciar Sesión';
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
                 showAlert('Error técnico en el servidor', 'error');
-                loginButton.disabled    = false;
+                grecaptcha.reset();
+                loginButton.disabled    = true;
                 loginButton.textContent = 'Iniciar Sesión';
             });
         });
 
         function showAlert(message, type) {
-            const alertMessage = document.getElementById('alertMessage');
-            alertMessage.textContent = message;
-            alertMessage.className   = `alert alert-${type}`;
-            alertMessage.style.display = 'block';
+            const el = document.getElementById('alertMessage');
+            el.textContent     = message;
+            el.className       = `alert alert-${type}`;
+            el.style.display   = 'block';
         }
 
         window.addEventListener('DOMContentLoaded', () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('timeout') === '1') {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('timeout') === '1') {
                 showAlert('Su sesión ha expirado por inactividad.', 'warning');
             }
         });
